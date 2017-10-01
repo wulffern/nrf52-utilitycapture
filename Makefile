@@ -46,7 +46,7 @@ SIZE            := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-size'
 remduplicates = $(strip $(if $1,$(firstword $1) $(call remduplicates,$(filter-out $(firstword $1),$1))))
 
 #source common to all targets
-C_SOURCE_FILES += src/main.c src/hal_utility.c
+C_SOURCE_FILES += src/main.c
 C_SOURCE_FILES += $(abspath ${SDKPATH}components/toolchain/system_nrf52.c)
 C_SOURCE_FILES += solar_sensor_beacon/src/hal_radio.c
 
@@ -59,6 +59,7 @@ ASM_SOURCE_FILES  = $(abspath ${SDKPATH}components/toolchain/gcc/gcc_startup_nrf
 #INC_PATHS += -I$(abspath config)
 INC_PATHS += -Isolar_sensor_beacon/inc
 INC_PATHS += -I$(abspath ${SDKPATH}components/drivers_nrf/config)
+INC_PATHS += -I$(abspath ${SDKPATH}components/libraries/strerror)
 INC_PATHS += -I$(abspath ${SDKPATH}components/libraries/timer)
 INC_PATHS += -I$(abspath ${SDKPATH}components/libraries/fifo)
 INC_PATHS += -I$(abspath ${SDKPATH}components/libraries/fstorage/config)
@@ -69,6 +70,7 @@ INC_PATHS += -I$(abspath ${SDKPATH}components/drivers_nrf/uart)
 INC_PATHS += -I$(abspath ${SDKPATH}components/ble/common)
 INC_PATHS += -I$(abspath ${SDKPATH}components/drivers_nrf/pstorage)
 INC_PATHS += -I$(abspath ${SDKPATH}components/libraries/uart)
+INC_PATHS += -I$(abspath ${SDKPATH}components/libraries/experimental_log)
 INC_PATHS += -I$(abspath ${SDKPATH}components/device)
 INC_PATHS += -I$(abspath ${SDKPATH}components/libraries/button)
 INC_PATHS += -I$(abspath ${SDKPATH}components/libraries/fstorage)
