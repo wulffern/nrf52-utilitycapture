@@ -19,10 +19,14 @@
 
 function data = getdata_short();
 
-system("cd ..;bin/plotdata");
-data = load("../data/raw.dat");
-data = data(1:4096)/1000;
-x = 20/32768*(1:length(data));
+%system("cd ..;bin/plotdata");
+%data = load("../data/raw.dat");
+data = load("../data/2017_10_5-8_0_0");
+data = data(1:8192)/1000;
+x = 4*(1:length(data));
 
-plot(x,data);
-xlabel("Seconds");
+plot(x/60/60,data,'Color',[0 0 0]);
+xlabel("Hours");
+ylabel("kW");
+axis([0 10 0 10])
+adorne;

@@ -7,9 +7,7 @@ MEMORY
 {
   FLASH (rx)   : ORIGIN = 0x0000, LENGTH = 0x80000
   RAM (rwx)    : ORIGIN = 0x20004010, LENGTH = 0x9f80
-  m_data1 (rwx) : ORIGIN = 0x20000000, LENGTH = 0x2000		
-  m_data2 (rwx) : ORIGIN = 0x20002000, LENGTH = 0x2000
-
+  m_data1 (rwx) : ORIGIN = 0x20000000, LENGTH = 0x4000		
 }
 
 SECTIONS
@@ -30,10 +28,6 @@ SECTIONS
     KEEP(*(.mydata1)) /* keep my variable even if not referenced */
   } > m_data1
   
-  .mydata2 0x20002000 :
-  {
-    KEEP(*(.mydata2)) /* keep my variable even if not referenced */
-  } > m_data2
 
  
   /* other placements follow here... */

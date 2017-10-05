@@ -33,7 +33,7 @@
 #endif
 
 
-#define DMA_COUNT            (0x1000)   //RAM buffer to store data
+#define DMA_COUNT            (0x2000)   //RAM buffer to store data
 int16_t result[DMA_COUNT] __attribute__((section (".mydata1")));
 int16_t ind = 0;
 
