@@ -34,8 +34,9 @@
 
 
 #define DMA_COUNT            (0x2000)   //RAM buffer to store data
-int16_t result[DMA_COUNT] __attribute__((section (".mydata1")));
-int16_t ind = 0;
+uint16_t result[DMA_COUNT] __attribute__((section (".mydata1")));
+uint16_t ind = 0;
+
 
 uint8_t adv_pdu_template[36 + 3] =
 {
@@ -60,13 +61,13 @@ uint8_t adv_pdu[36 + 3] =
 bool isAddressMatch(uint8_t * p_data, uint8_t * template){
 
     bool isMatch = true;
-    for(int i=0;i<25;i++){
+    for(int i=0;i<29;i++){
         if(p_data[i] != template[i]){
             isMatch = false;
         }
     }
     return isMatch;
-        }
+}
 
 
 void RADIO_IRQHandler(void){
@@ -81,20 +82,20 @@ void RADIO_IRQHandler(void){
         if(isAddressMatch(adv_pdu,adv_pdu_template)){
 
 
-			nrf_gpio_pin_toggle(LED1);
-			
-            result[ind] = (adv_pdu[37] << 8) | adv_pdu[38];
+            nrf_gpio_pin_toggle(LED1);
+
+            result[ind] = ((uint16_t) ((uint8_t) adv_pdu[37] << 8) | (uint8_t) adv_pdu[38]);
             ind++;
 
-			if(ind >= DMA_COUNT){
-				ind = 0;
-			}
-			
+            if(ind >= DMA_COUNT){
+                ind = 0;
+            }
+
         }
 
 
-		NRF_RADIO->TASKS_START = 1;
-		NRF_RADIO->EVENTS_DISABLED = 0;
+        NRF_RADIO->TASKS_START = 1;
+        NRF_RADIO->EVENTS_DISABLED = 0;
 
         // Read back event register to ensure we have cleared it before exiting IRQ handler.
         dummy = NRF_RADIO->EVENTS_END;
@@ -126,12 +127,12 @@ int main(void)
 
     hal_radio_channel_index_set(38);
 
-	NRF_RADIO->INTENSET = (RADIO_INTENSET_END_Enabled << RADIO_INTENSET_END_Pos) | (RADIO_INTENSET_DISABLED_Enabled << RADIO_INTENSET_DISABLED_Pos)  ;
+    NRF_RADIO->INTENSET = (RADIO_INTENSET_END_Enabled << RADIO_INTENSET_END_Pos) | (RADIO_INTENSET_DISABLED_Enabled << RADIO_INTENSET_DISABLED_Pos)  ;
 
-	NRF_RADIO->SHORTS =     (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos) | \
-		(RADIO_SHORTS_END_START_Enabled << RADIO_SHORTS_END_START_Pos)   ;
-		
-	
+    NRF_RADIO->SHORTS =     (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos) | \
+        (RADIO_SHORTS_END_START_Enabled << RADIO_SHORTS_END_START_Pos)   ;
+
+
     NRF_RADIO->PACKETPTR = (uint32_t)&(adv_pdu[0]);
     NRF_RADIO->EVENTS_DISABLED = 0;
     NRF_RADIO->TASKS_RXEN = 1;

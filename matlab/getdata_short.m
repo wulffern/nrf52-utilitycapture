@@ -19,9 +19,9 @@
 
 function data = getdata_short();
 
-%system("cd ..;bin/plotdata");
-%data = load("../data/raw.dat");
-data = load("../data/2017_10_5-8_0_0");
+system("cd ..;bin/plotdata");
+data = load("../data/raw.dat");
+%data = load("../data/2017_10_5-8_0_0");
 data = data(1:8192)/1000;
 x = 4*(1:length(data));
 
