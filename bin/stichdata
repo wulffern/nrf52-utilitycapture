@@ -1,0 +1,136 @@
+#!/usr/bin/perl
+######################################################################
+##        Copyright (c) 2017 Carsten Wulff Software, Norway 
+## ###################################################################
+## Created       : wulff at 2017-10-8
+## ###################################################################
+##   This program is free software: you can redistribute it and/or modify
+##   it under the terms of the GNU General Public License as published by
+##   the Free Software Foundation, either version 3 of the License, or
+##   (at your option) any later version.
+## 
+##   This program is distributed in the hope that it will be useful,
+##   but WITHOUT ANY WARRANTY; without even the implied warranty of
+##   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##   GNU General Public License for more details.
+## 
+##   You should have received a copy of the GNU General Public License
+##   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+######################################################################
+
+#- Functions
+sub readFile;
+sub getIndexes;
+use Time::Local;
+
+
+#- Arguments
+my $dir = shift;
+my $datafile = shift;
+
+my %data;
+my $d = \%data;
+
+my @files = `ls -1tr $dir`;
+my @dfiles;
+
+#- Read names
+foreach my $f(@files){
+  my ($date,$time) = split(/-/,$f);
+  next unless $date =~ m/\d+_\d+_\d+/;
+  push(@dfiles,$f);
+}
+
+#- Read first file
+my @prev = readFile($dir."/".$dfiles[0]);
+push(@prev,@prev);
+
+#- Read other files
+for(my $i=1; $i< scalar(@dfiles);$i+=1){
+
+  #- Open and read file
+  my $f = $dfiles[$i];
+  chomp($f);
+  my @now = readFile($dir."/".$dfiles[$i]);
+  push(@now,@now);
+
+  #- Figure out which data to capture
+  my @data = getIndexes(@now);
+  @prev = @now;
+
+  #- Get data of last data entry
+  my ($date,$time) = split(/-/,$f);
+  my ($year,$month,$day) = split(/_/,$date);
+  my ($hour,$minute,$second) = split(/_/,$time);
+  my $time = timelocal($second,$minute,$hour,$day,$month-1,$year);
+  
+  #- Scan through in reverse order, and build data
+  for(my $i=-1;$i > -scalar(@data);$i-=1){
+	if($data[$i] < 0){
+#	  $d->{$time} = $data[$i] + 65536;
+	}else{
+	  $d->{$time} = $data[$i];
+	}
+	$time -= 4;
+  }
+}
+
+my @time = sort{ $a <=> $b}(keys(%data));
+
+
+open(fo, " > $datafile") or die "Could not open '$datafile'";
+foreach my $epoch(@time){
+  print fo $epoch.";".$d->{$epoch}."\n";
+}
+close(fo) or die "Could not close '$datafile'";
+
+
+sub readFile{
+  my $file = shift;
+  my @data = `cat $file`;
+  chomp(@data);
+  return @data;
+}
+
+sub getIndexes{
+  my @now = @_;
+  my $count = scalar(@now);
+
+  my $match = 0;
+  my $start = 0;
+  my $stop = 0;
+  my $begin = -1;
+  my $end = -1;
+  for(my $z=0;$z < $count;$z+=1){
+	if(($now[$z] == $prev[$z])){
+	  if($match == 0){
+		$start = $z;
+		$stop = 0;
+	  }
+	  $match = 1;
+	}else{
+
+	  if($match){
+		$stop = $z;
+
+		my $length = $stop - $start;
+		if($length > 200){
+#		  print "($start, $stop, $length) ";
+		  if($begin == -1 && $end == -1){
+			$begin = $stop;
+		  }elsif($begin >= 0){
+			$end = $start;
+#			print " Begin: $begin , End: $end, Length: ".($end - $begin)." ";
+		  }
+		}
+	  }
+	  $match = 0;
+	}
+  }
+
+  my @data;
+  if($begin >= 0 && $end >= 0){
+	@data = @now[$begin..$end];
+  }
+return @data;
+}
