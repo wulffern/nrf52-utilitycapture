@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 ######################################################################
-##        Copyright (c) 2017 Carsten Wulff Software, Norway 
+##        Copyright (c) 2017 Carsten Wulff Software, Norway
 ## ###################################################################
 ## Created       : wulff at 2017-10-8
 ## ###################################################################
@@ -8,15 +8,18 @@
 ##   it under the terms of the GNU General Public License as published by
 ##   the Free Software Foundation, either version 3 of the License, or
 ##   (at your option) any later version.
-## 
+##
 ##   This program is distributed in the hope that it will be useful,
 ##   but WITHOUT ANY WARRANTY; without even the implied warranty of
 ##   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ##   GNU General Public License for more details.
-## 
+##
 ##   You should have received a copy of the GNU General Public License
 ##   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ######################################################################
+
+#- Options
+my $move = 1;
 
 #- Functions
 sub readFile;
@@ -35,54 +38,88 @@ my @files = `ls -1tr $dir`;
 my @dfiles;
 
 #- Read names
-foreach my $f(@files){
+foreach my $f (@files) {
   my ($date,$time) = split(/-/,$f);
   next unless $date =~ m/\d+_\d+_\d+/;
   push(@dfiles,$f);
 }
 
-#- Read first file
-my @prev = readFile($dir."/".$dfiles[0]);
-push(@prev,@prev);
-
 #- Read other files
-for(my $i=1; $i< scalar(@dfiles);$i+=1){
+for (my $i=0; $i< scalar(@dfiles);$i+=1) {
 
   #- Open and read file
   my $f = $dfiles[$i];
   chomp($f);
-  my @now = readFile($dir."/".$dfiles[$i]);
-  push(@now,@now);
 
-  #- Figure out which data to capture
-  my @data = getIndexes(@now);
-  @prev = @now;
 
   #- Get data of last data entry
   my ($date,$time) = split(/-/,$f);
   my ($year,$month,$day) = split(/_/,$date);
   my ($hour,$minute,$second) = split(/_/,$time);
   my $time = timelocal($second,$minute,$hour,$day,$month-1,$year);
+
+
+
+
+
+  my @now = readFile($dir."/".$dfiles[$i]);
+
+  #- Move file after it's read
+  if($move){
+	my $newdir = $dir;
+	$newdir =~ s/data/archive/ig;
+	system("mv ".$dir."/".$f." ".$newdir."/".$f);
+  }
+  
+  #- Figure out which data to capture
+  my @data = getIndexes(@now);
+  @prev = @now;
   
   #- Scan through in reverse order, and build data
-  for(my $i=-1;$i > -scalar(@data);$i-=1){
-	if($data[$i] < 0){
-#	  $d->{$time} = $data[$i] + 65536;
-	}else{
-	  $d->{$time} = $data[$i];
-	}
-	$time -= 4;
+  for (my $i=-1;$i > -scalar(@data);$i-=1) {
+
+    #- I don't believe in peak numbers of > 20kW, it may be correct, but sounds suspicious. Filter for now.
+    if ($data[$i] > 20e3) {
+
+    } else {
+
+	  my ($xsec,$xmin,$xhour,$xmday,$xmon,$xyear,$xwday,$xyday,$xisdst) =
+		localtime($time);
+	  
+	  #- Build output file name
+	  my $sdate = sprintf("%d_%02u_%02u",(1900 + $xyear),($xmon+1),$xmday);
+	  my $file = $datafile.$sdate.".dat";
+
+      $d->{$file}->{$time} = $data[$i];
+    }
+    $time -= 4;
   }
 }
 
-my @time = sort{ $a <=> $b}(keys(%data));
+my @date = sort{ $a <=> $b}(keys(%data));
 
+foreach my $date (@date) {
 
-open(fo, " > $datafile") or die "Could not open '$datafile'";
-foreach my $epoch(@time){
-  print fo $epoch.";".$d->{$epoch}."\n";
+  my @time = sort{ $a <=> $b}(keys(%{$data{$date}}));
+  
+  open(fo, " > $date") or die "Could not open '$file'";
+  foreach my $epoch (@time) {
+    print fo $epoch.";".$d->{$date}->{$epoch}."\n";
+  }
+  close(fo) or die "Could not close '$file'";
+
+  system("cd matlab; /usr/local/octave/3.8.0/bin/octave -fq script_plotday.m $date");
+
+  #- Move log files to other dir
+  my $newfile = $date;
+  $newfile =~ s/plots/logs/ig;
+  system("mv $date $newfile");
 }
-close(fo) or die "Could not close '$datafile'";
+
+#-----------------------------------------------------------
+# Subs
+#-----------------------------------------------------------
+
 
 
 sub readFile{
@@ -97,40 +134,29 @@ sub getIndexes{
   my $count = scalar(@now);
 
   my $match = 0;
-  my $start = 0;
   my $stop = 0;
   my $begin = -1;
   my $end = -1;
-  for(my $z=0;$z < $count;$z+=1){
-	if(($now[$z] == $prev[$z])){
-	  if($match == 0){
-		$start = $z;
-		$stop = 0;
-	  }
-	  $match = 1;
-	}else{
+  for (my $z=0;$z < $count;$z+=1) {
+    if (($now[$z] == 0)) {
+      if ($match == 0) {
+        $stop = $z;
+      }
+      $match = 1;
+    } else {
+      $match = 0;
+    }
+  }
 
-	  if($match){
-		$stop = $z;
+  if ($match) {
+    $begin = 0;
+    $end = $stop-1;
 
-		my $length = $stop - $start;
-		if($length > 200){
-#		  print "($start, $stop, $length) ";
-		  if($begin == -1 && $end == -1){
-			$begin = $stop;
-		  }elsif($begin >= 0){
-			$end = $start;
-#			print " Begin: $begin , End: $end, Length: ".($end - $begin)." ";
-		  }
-		}
-	  }
-	  $match = 0;
-	}
   }
 
   my @data;
-  if($begin >= 0 && $end >= 0){
-	@data = @now[$begin..$end];
+  if ($begin >= 0 && $end >= 0) {
+    @data = @now[$begin..$end];
   }
-return @data;
+  return @data;
 }
