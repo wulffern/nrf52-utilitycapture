@@ -25,6 +25,7 @@ avg1 = filter(ones(150,1)/150,1,data(:,2)); % 10 min average
 avg2 = filter(ones(900,1)/900,1,data(:,2)); % 1 hour average
 
 x = (data(:,1) - data(1,1))/(60*60); %Hours
+
 setenv("GNUTERM","X11")
 figure1 = figure(1);
 date = ctime(data(1,1));
@@ -38,7 +39,7 @@ plot(x,avg1/1000,'b');
 plot(x,avg2/1000,'r');
 xlabel('Time [h]');
 ylabel('Power [kw]');
-title([date," Average=",sprintf('%.2f',mm/1000)," kWh"]);
+title([date," Average=",sprintf('%.2f',mm/1000)," kW"]);
 axis([0 24 0 15])
 adorne
 saveas(figure1,[file,".pdf"]);

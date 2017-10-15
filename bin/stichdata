@@ -18,6 +18,9 @@
 ##   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ######################################################################
 
+use FindBin;
+
+
 #- Options
 my $move = 1;
 
@@ -101,6 +104,8 @@ my @date = sort{ $a <=> $b}(keys(%data));
 foreach my $date (@date) {
 
   my @time = sort{ $a <=> $b}(keys(%{$data{$date}}));
+
+  next if scalar(@time) < 10e3;
   
   open(fo, " > $date") or die "Could not open '$file'";
   foreach my $epoch (@time) {
@@ -108,7 +113,7 @@ foreach my $date (@date) {
   }
   close(fo) or die "Could not close '$file'";
 
-  system("cd matlab; /usr/local/octave/3.8.0/bin/octave -fq script_plotday.m $date");
+  system("cd $FindBin::Bin"."/../matlab; /usr/local/octave/3.8.0/bin/octave -fq script_plotday.m $date");
 
   #- Move log files to other dir
   my $newfile = $date;
