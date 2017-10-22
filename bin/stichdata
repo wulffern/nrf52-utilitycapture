@@ -62,7 +62,7 @@ for (my $i=0; $i< scalar(@dfiles);$i+=1) {
   my $time = timelocal($second,$minute,$hour,$day,$month-1,$year);
 
 
-
+  print $f."\n";
 
 
   my @now = readFile($dir."/".$dfiles[$i]);
@@ -73,11 +73,11 @@ for (my $i=0; $i< scalar(@dfiles);$i+=1) {
 	$newdir =~ s/data/archive/ig;
 	system("mv ".$dir."/".$f." ".$newdir."/".$f);
   }
-  
+
   #- Figure out which data to capture
   my @data = getIndexes(@now);
   @prev = @now;
-  
+
   #- Scan through in reverse order, and build data
   for (my $i=-1;$i > -scalar(@data);$i-=1) {
 
@@ -88,7 +88,7 @@ for (my $i=0; $i< scalar(@dfiles);$i+=1) {
 
 	  my ($xsec,$xmin,$xhour,$xmday,$xmon,$xyear,$xwday,$xyday,$xisdst) =
 		localtime($time);
-	  
+
 	  #- Build output file name
 	  my $sdate = sprintf("%d_%02u_%02u",(1900 + $xyear),($xmon+1),$xmday);
 	  my $file = $datafile.$sdate.".dat";
@@ -105,8 +105,9 @@ foreach my $date (@date) {
 
   my @time = sort{ $a <=> $b}(keys(%{$data{$date}}));
 
+  print scalar(@time)." $date\n";
   next if scalar(@time) < 10e3;
-  
+
   open(fo, " > $date") or die "Could not open '$file'";
   foreach my $epoch (@time) {
     print fo $epoch.";".$d->{$date}->{$epoch}."\n";
@@ -151,6 +152,13 @@ sub getIndexes{
     } else {
       $match = 0;
     }
+
+
+  }
+
+  if($stop == 0 || $stop > 5190){
+	$end = 3600;
+	$begin = 0;
   }
 
   if ($match) {
