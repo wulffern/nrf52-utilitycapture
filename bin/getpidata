@@ -1,45 +1,61 @@
 #!/usr/bin/perl
 ######################################################################
-##        Copyright (c) 2016 Carsten Wulff Software, Norway 
+##        Copyright (c) 2017 Carsten Wulff Software, Norway
 ## ###################################################################
-## Created       : wulff at 2016-7-7
+## Created       : wulff at 2017-10-8
 ## ###################################################################
 ##   This program is free software: you can redistribute it and/or modify
 ##   it under the terms of the GNU General Public License as published by
 ##   the Free Software Foundation, either version 3 of the License, or
 ##   (at your option) any later version.
-## 
+##
 ##   This program is distributed in the hope that it will be useful,
 ##   but WITHOUT ANY WARRANTY; without even the implied warranty of
 ##   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ##   GNU General Public License for more details.
-## 
+##
 ##   You should have received a copy of the GNU General Public License
 ##   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ######################################################################
 
-use strict;
-my $fh;
-open($fh, "> data/raw.dat") or die "Could not open raw.dat";
+use FindBin;
 
-my $addr = (shift || 0x20000000);
-my $count = (shift || 8192);
-my $bytes = $count*2;
 
-my $jprog = "/usr/local/bin/nrfjprog";
+#- Functions
+sub readFile;
+sub getIndexes;
+use Time::Local;
 
-my @buffer = `$jprog -f nRF52 --memrd $addr --w 16 --n $bytes -s 682944922;`;
-system("$jprog -f nRF52 --run -s 682944922");
-my @data;
+#- Arguments
+my $dir = "/Users/wulff/Dropbox/utility/pilogs";
+my $datafile = shift;
 
-foreach(@buffer){
-  my @line = split(/\s+/);
-  shift(@line);
-  foreach my $i (0..7){
-	my $hex = $line[$i];
-	my $dec = hex($hex);
-	$dec -= 65536 if $dec >= 16384;
-	print $fh $dec."\n";
-  }
+my %data;
+my $d = \%data;
+
+#- Sync files
+my $cmd = "cd $dir".' ;ssh pi@pi "cd /home/pi/data/utility/pilogs; tar cfz - ." | tar zxf - ';
+
+print $cmd."\n";
+system($cmd);
+my @files = `ls -1tr $dir`;
+#- Read names
+foreach my $f (@files) {
+  chomp($f);
+  next unless $f =~ m/\d+-\d+-\d+\.dat$/;
+  push(@dfiles,$dir."/".$f);
+  
 }
-close($fh);
+
+#- Read files
+for (my $i=0; $i< scalar(@dfiles);$i+=1) {
+  my $f = $dfiles[$i];
+  system("cd $FindBin::Bin"."/../matlab; /usr/local/octave/3.8.0/bin/octave -fq script_plotday.m $f");
+  my $p = $f.".pdf";
+  my $pn = $p;
+  $pn =~ s/pilogs/piplots/ig;
+  system("mv $p $pn");
+}
+
+
+
